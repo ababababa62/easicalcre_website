@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>页面跳转中...</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      flex-direction: column;
+    }
+    .loading-box {
+      background: white;
+      padding: 40px 60px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #333;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 0 auto 20px;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .error {
+      color: #e74c3c;
+      margin-top: 20px;
+      padding: 15px;
+      background: #fee;
+      border-radius: 6px;
+      display: none;
+    }
+    .error.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="loading-box">
+    <div class="spinner"></div>
+    <h2>页面跳转中...</h2>
+    <p id="target-info">正在解析目标页面</p>
+    <div class="error" id="error-box">
+      <strong>跳转失败：</strong><span id="error-msg"></span>
+    </div>
+  </div>
+
+  <script>
+    // 页面加载后立即执行跳转
+    (function() {
+      const params = new URLSearchParams(window.location.search);
+      const targetPage = params.get('page');
+      
+      // 错误处理函数
+      function showError(msg) {
+        document.querySelector('.spinner').style.display = 'none';
+        document.getElementById('error-box').classList.add('show');
+        document.getElementById('error-msg').textContent = msg;
+        document.querySelector('h2').textContent = '跳转失败';
+      }
+      
+      // 验证目标页面
+      if (!targetPage) {
+        showError('缺少 page 参数（示例：goto.html?page=foo.html）');
+        return;
+      }
+      
+      // 安全校验：防止跳转到外部域名或恶意路径
+      if (targetPage.includes('://') || targetPage.startsWith('//')) {
+        showError('不允许跳转到外部链接');
+        return;
+      }
+      
+      // 移除page参数，保留其他参数传递给目标页面
+      params.delete('page');
+      const remainingParams = params.toString();
+      
+      // 构建最终URL
+      let finalUrl = targetPage;
+      if (remainingParams) {
+        // 检查目标页面是否已有查询参数
+        const separator = targetPage.includes('?') ? '&' : '?';
+        finalUrl += separator + remainingParams;
+      }
+      
+      // 显示目标信息（调试用，实际可删除）
+      document.getElementById('target-info').textContent = `目标: ${finalUrl}`;
+      
+      // 执行跳转（当前窗口）
+      window.location.href = finalUrl;
+      
+      // 如果3秒后还在当前页，显示错误
+      setTimeout(() => {
+        if (window.location.pathname.includes('goto.html')) {
+          showError('跳转超时，请检查目标页面是否存在');
+        }
+      }, 3000);
+    })();
+  </script>
+</body>
+</html>
